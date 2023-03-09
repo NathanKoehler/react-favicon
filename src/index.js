@@ -148,8 +148,8 @@ class Favicon extends React.Component {
     if (typeof document === 'undefined') return
 
     var activeInstance = Favicon.getActiveInstance()
-    var isAnimated =
-      activeInstance.props.url instanceof Array && activeInstance.props.animated
+    var validAnimation = activeInstance.props.url instanceof Array
+    var isAnimated = validAnimation && activeInstance.props.animated
 
     // clear any running animations
     var intervalId = null
@@ -159,7 +159,23 @@ class Favicon extends React.Component {
       var animateFavicon = function animateFavicon() {
         var nextAnimationIndex =
           (activeInstance.state.animationIndex + 1) %
-          activeInstance.props.url.length
+          activeInstance.props.url.length * 2
+        if (!activeInstance.props.looping) {
+          if (nextAnimationIndex === 
+            activeInstance.props.url.length - 1 ||
+            nextAnimationIndex === 
+            activeInstance.props.url.length * 2 - 1) {
+            clearInterval(activeInstance.state.animationLoop)
+            activeInstance.setState({ animationLoop: null })
+            return
+          }
+        } else if (!activeInstance.props.lerp) {
+          nextAnimationIndex %= activeInstance.props.url.length
+        } else if (nextAnimationIndex 
+          >= activeInstance.props.url.length) {
+          nextAnimationIndex = activeInstance.props.url.length * 2
+          - nextAnimationIndex
+        }
         Favicon.draw()
         activeInstance.setState({ animationIndex: nextAnimationIndex })
       }
@@ -177,6 +193,7 @@ class Favicon extends React.Component {
 
   state = {
     animationIndex: 0,
+    animationLerpIndex: 0,
     animationLoop: null,
     animationRunning: false,
   }
@@ -218,6 +235,9 @@ Favicon.defaultProps = {
   alertFillColor: 'red',
   alertTextColor: 'white',
   animated: true,
+  looping: false,
+  trigger: false,
+  lerp: false,
   animationDelay: 500,
   keepIconLink: () => false,
   renderOverlay: null,
@@ -230,6 +250,9 @@ Favicon.propTypes = {
   alertFillColor: PropTypes.string,
   alertTextColor: PropTypes.string,
   animated: PropTypes.bool,
+  looping: PropTypes.bool,
+  trigger: PropTypes.bool,
+  lerp: PropTypes.bool,
   animationDelay: PropTypes.number,
   keepIconLink: PropTypes.func,
   renderOverlay: PropTypes.func,
